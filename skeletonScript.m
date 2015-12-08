@@ -4,15 +4,15 @@ clear all;close all;clc
 % parameter. You will likely want to set numIter to 1 while you debug your
 % link, and then increase it to get an average BER.
 numIter = 1;  % The number of iterations of the simulation
-nSym = 100000;    % The number of symbols per packet
+nSym = 1000;    % The number of symbols per packet
 SNR_Vec = 0:2:16;
 lenSNR = length(SNR_Vec);
 
-M = 16;        % The M-ary number, 2 corresponds to binary modulation
+M = 2;        % The M-ary number, 2 corresponds to binary modulation
 k = log2(M);
 
 chan = 1;          % No channel
-%chan = [1 .2 .4]; % Somewhat invertible channel impulse response, Moderate ISI
+chan = [1 .2 .4]; % Somewhat invertible channel impulse response, Moderate ISI
 %chan = [0.227 0.460 0.688 0.460 0.227]';   % Not so invertible, severe ISI
 
 
@@ -27,11 +27,12 @@ chan = 1;          % No channel
 
 % Create a vector to store the BER computed during each iteration
 berVec = zeros(numIter, lenSNR);
+berVec_uneq = zeros(numIter, lenSNR);
 
 % Run the simulation numIter amount of times
 for i = 1:numIter
     
-    bits = randint(1, nSym*k, [0 1]);     % Generate random bits
+    bits = randi([0 1], 1, nSym*k);     % Generate random bits
     % New bits must be generated at every
     % iteration
 
@@ -60,29 +61,51 @@ for i = 1:numIter
         end
  
         txNoisy = awgn(txChan,SNR_Vec(j) + 10*log10(k), 'measured'); % Add AWGN
-
-        rx = qamdemod(txNoisy,M); % Demodulate
+        
+        trainlen = 500; % Length of training sequence
+        
+        % Equalize the received signal. 
+        eq1 = lineareq(2, lms(0.1)); % Create an equalizer object.
+        eq1.SigConst = qammod([0:M-1], M); % Set signal constellation.
+        [symbolest,yd] = equalize(eq1,txNoisy,tx(1:trainlen)); % Equalize.
+        
+%         h = scatterplot(txNoisy,1,trainlen,'bx'); hold on;
+%         scatterplot(symbolest,1,trainlen,'g.',h);
+%         scatterplot(eq1.SigConst,1,0,'k*',h);
+%         legend('Filtered signal','Equalized signal',...
+%            'Ideal signal constellation');
+%         hold off;
+        
+        rx = qamdemod(symbolest,M); % Demodulate
+        rx_uneq = qamdemod(txNoisy, M);
 
         % Again, if M was a larger number, I'd need to convert my symbols
         % back to bits here.
         rx = de2bi(rx,'left-msb'); % Map Symbols to Bits
         rx = reshape(rx.',numel(rx),1);
+        rx_uneq = de2bi(rx_uneq,'left-msb'); % Map Symbols to Bits
+        rx_uneq = reshape(rx_uneq.',numel(rx_uneq),1);
 
         rxMSG = vitdec(rx, trellis, 34, 'trunc', 'hard')';
         rxMSG = rx';
+        rxMSG_uneq = rx_uneq';
         
         % Compute and store the BER for this iteration
 
         [zzz berVec(i,j)] = biterr(bits, rxMSG);  % We're interested in the BER, which is the 2nd output of BITERR
-
+        [zzz berVec_uneq(i,j)] = biterr(bits, rxMSG_uneq);  % We're interested in the BER, which is the 2nd output of BITERR
+        
     end  % End SNR iteration
 end      % End numIter iteration
 
 
 % Compute and plot the mean BER
 ber = mean(berVec,1)
+ber_uneq = mean(berVec_uneq,1);
 
 semilogy(SNR_Vec, ber)
+hold on;
+semilogy(SNR_Vec, ber_uneq)
 
 % Compute the theoretical BER for this scenario
 % THIS IS ONLY VALID FOR BPSK!
@@ -95,4 +118,4 @@ else
 end
 hold on
 semilogy(SNR_Vec,berTheory,'r')
-legend('BER', 'Theoretical BER')
+legend('BER','ER uneq', 'Theoretical BER')
