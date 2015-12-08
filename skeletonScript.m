@@ -4,7 +4,7 @@ clear all;close all;clc
 % parameter. You will likely want to set numIter to 1 while you debug your
 % link, and then increase it to get an average BER.
 numIter = 1;  % The number of iterations of the simulation
-nSym = 1000;    % The number of symbols per packet
+nSym = 100000;    % The number of symbols per packet
 SNR_Vec = 0:2:16;
 lenSNR = length(SNR_Vec);
 
@@ -31,7 +31,7 @@ berVec = zeros(numIter, lenSNR);
 % Run the simulation numIter amount of times
 for i = 1:numIter
     
-    bits = randint(1, nSym*M, [0 1]);     % Generate random bits
+    bits = randint(1, nSym*k, [0 1]);     % Generate random bits
     % New bits must be generated at every
     % iteration
 
@@ -40,11 +40,9 @@ for i = 1:numIter
     % For binary, our MSG signal is simply the bits
     trellis = poly2trellis(7,{'1 + x^3 + x^4 + x^5 + x^6', ...
     '1 + x + x^3 + x^4 + x^6'});
-%     trellis = struct('numInputSymbols',2,'numOutputSymbols',4,...
-%     'numStates',4,'nextStates',[0 2;0 2;1 3;1 3],...
-%     'outputs',[0 3;1 2;3 0;2 1]);
     code = convenc(bits, trellis, 0);
     
+    code = bits; % remove this
     msg = bi2de(reshape(code,k,length(code)/k).','left-msb')';
 
     for j = 1:lenSNR % one iteration of the simulation at each SNR Value
@@ -61,7 +59,7 @@ for i = 1:numIter
             txChan = filter(chan,1,tx);  % Apply the channel.
         end
  
-        txNoisy = awgn(txChan,SNR_Vec(j),'measured'); % Add AWGN
+        txNoisy = awgn(txChan,SNR_Vec(j) + 10*log10(k), 'measured'); % Add AWGN
 
         rx = qamdemod(txNoisy,M); % Demodulate
 
@@ -71,7 +69,8 @@ for i = 1:numIter
         rx = reshape(rx.',numel(rx),1);
 
         rxMSG = vitdec(rx, trellis, 34, 'trunc', 'hard')';
-
+        rxMSG = rx';
+        
         % Compute and store the BER for this iteration
 
         [zzz berVec(i,j)] = biterr(bits, rxMSG);  % We're interested in the BER, which is the 2nd output of BITERR
@@ -81,7 +80,7 @@ end      % End numIter iteration
 
 
 % Compute and plot the mean BER
-ber = mean(berVec,1);
+ber = mean(berVec,1)
 
 semilogy(SNR_Vec, ber)
 
@@ -89,7 +88,11 @@ semilogy(SNR_Vec, ber)
 % THIS IS ONLY VALID FOR BPSK!
 % YOU NEED TO CHANGE THE CALL TO BERAWGN FOR DIFF MOD TYPES
 % Also note - there is no theoretical BER when you have a multipath channel
-berTheory = berawgn(SNR_Vec,'psk',2,'nondiff');
+if M == 2
+    berTheory = berawgn(SNR_Vec,'psk',2,'nondiff');
+else
+    berTheory = berawgn(SNR_Vec, 'qam', M);
+end
 hold on
 semilogy(SNR_Vec,berTheory,'r')
 legend('BER', 'Theoretical BER')

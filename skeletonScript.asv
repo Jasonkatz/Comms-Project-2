@@ -4,7 +4,7 @@ clear all;close all;clc
 % parameter. You will likely want to set numIter to 1 while you debug your
 % link, and then increase it to get an average BER.
 numIter = 1;  % The number of iterations of the simulation
-nSym = 2000;    % The number of symbols per packet
+nSym = 1000;    % The number of symbols per packet
 SNR_Vec = 0:2:16;
 lenSNR = length(SNR_Vec);
 
@@ -44,7 +44,7 @@ for i = 1:numIter
 %     'numStates',4,'nextStates',[0 2;0 2;1 3;1 3],...
 %     'outputs',[0 3;1 2;3 0;2 1]);
     code = convenc(bits, trellis, 0);
-    
+    code
     msg = bi2de(reshape(code,k,length(code)/k).','left-msb')';
 
     for j = 1:lenSNR % one iteration of the simulation at each SNR Value
@@ -61,7 +61,7 @@ for i = 1:numIter
             txChan = filter(chan,1,tx);  % Apply the channel.
         end
  
-        txNoisy = awgn(txChan,SNR_Vec(j),'measured'); % Add AWGN
+        txNoisy = awgn(txChan,SNR_Vec(j)/k); % Add AWGN
 
         rx = qamdemod(txNoisy,M); % Demodulate
 
@@ -69,11 +69,8 @@ for i = 1:numIter
         % back to bits here.
         rx = de2bi(rx,'left-msb'); % Map Symbols to Bits
         rx = reshape(rx.',numel(rx),1);
-        
-        trellis2 = struct('numInputSymbols',2,'numOutputSymbols',4,...
-        'numStates',4,'nextStates',[0 2;0 2;1 3;1 3],...
-        'outputs',[0 3;1 2;3 0;2 1]);
-        rxMSG = vitdec(rx, trellis, 10, 'trunc', 'hard')';
+
+        rxMSG = vitdec(rx, trellis, 34, 'trunc', 'hard')';
 
         % Compute and store the BER for this iteration
 
@@ -84,7 +81,7 @@ end      % End numIter iteration
 
 
 % Compute and plot the mean BER
-ber = mean(berVec,1);
+ber = mean(berVec,1)
 
 semilogy(SNR_Vec, ber)
 
@@ -92,7 +89,11 @@ semilogy(SNR_Vec, ber)
 % THIS IS ONLY VALID FOR BPSK!
 % YOU NEED TO CHANGE THE CALL TO BERAWGN FOR DIFF MOD TYPES
 % Also note - there is no theoretical BER when you have a multipath channel
-berTheory = berawgn(SNR_Vec,'psk',2,'nondiff');
+if M == 2
+    berTheory = berawgn(SNR_Vec,'psk',2,'nondiff');
+else
+    berTheory = berawgn(SNR_Vec, 'qam', M);
+end
 hold on
 semilogy(SNR_Vec,berTheory,'r')
 legend('BER', 'Theoretical BER')
