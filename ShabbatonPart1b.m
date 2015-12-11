@@ -28,12 +28,12 @@ chan = [1 .2 .4]; % Somewhat invertible channel impulse response, Moderate ISI
 % Create a vector to store the BER computed during each iteration
 berVec = zeros(numIter, lenSNR);
 berVec_uneq = zeros(numIter, lenSNR);
-trainlen = 100;
+trainlen = 125;
 
 % Run the simulation numIter amount of times
 for i = 1:numIter
     
-    bits = randi([0 1], 1, nSym*k + trainlen);     % Generate random bits
+    bits = randi([0 1], 1, nSym*k);     % Generate random bits
     % New bits must be generated at every
     % iteration
 
