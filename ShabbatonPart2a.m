@@ -9,7 +9,7 @@ SNR_Vec = 0:2:12;
 lenSNR = length(SNR_Vec);
 h = waitbar(0,'Starting waitbar...');
 
-M = 16;        % The M-ary number, 2 corresponds to binary modulation
+M = 4;        % The M-ary number, 2 corresponds to binary modulation
 k = log2(M);    % number of bits per symbol
 
 %chan = 1;          % No channel
