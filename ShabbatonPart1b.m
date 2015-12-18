@@ -3,12 +3,12 @@ clear all;close all;clc
 % For the final version of this project, you must use these 3
 % parameter. You will likely want to set numIter to 1 while you debug your
 % link, and then increase it to get an average BER.
-numIter = 10;  % The number of iterations of the simulation
+numIter = 100;  % The number of iterations of the simulation
 nSym = 1000;    % The number of symbols per packet
 SNR_Vec = 0:2:12;
 lenSNR = length(SNR_Vec);
 
-M = 2;        % The M-ary number, 2 corresponds to binary modulation
+M = 4;        % The M-ary number, 2 corresponds to binary modulation
 k = log2(M);    % number of bits per symbol
 
 %chan = 1;          % No channel
@@ -44,8 +44,7 @@ for i = 1:numIter
     %trellis = poly2trellis(7,{'1 + x^3 + x^4 + x^5 + x^6','1 + x + x^3 + x^4 + x^6'});
     %code = convenc(bits, trellis, 0);
    
-    %msg = bi2de(reshape(code,k,length(code)/k).','left-msb')';
-    msg = bits;
+    msg = bi2de(reshape(bits,k,length(bits)/k).','left-msb')';
     for j = 1:lenSNR % one iteration of the simulation at each SNR Value
 
 
@@ -65,15 +64,15 @@ for i = 1:numIter
         % Equalize the signal
         forgetfactor = .99;
         eqobj = dfe(5, 5, rls(forgetfactor, .3));
-        tic
+        
         txeq = equalize(eqobj, txNoisy, tx(1:trainlen));
-        toc
-%         h = scatterplot(txNoisy,1,trainlen,'bx'); hold on;
-%         scatterplot(symbolest,1,trainlen,'g.',h);
-%         scatterplot(eq1.SigConst,1,0,'k*',h);
-%         legend('Filtered signal','Equalized signal',...
-%            'Ideal signal constellation');
-%         hold off;
+        
+        h = scatterplot(txNoisy,1,trainlen,'bx'); hold on;
+        scatterplot(txeq,1,trainlen,'g.',h);
+        scatterplot(eqobj.SigConst,1,0,'k*',h);
+        legend('Filtered signal','Equalized signal',...
+           'Ideal signal constellation');
+        hold off;
         
         % Demodulate
         rx = qamdemod(txeq, M, 0, 'gray'); 
@@ -86,14 +85,14 @@ for i = 1:numIter
         rx_uneq = de2bi(rx_uneq,'left-msb'); % Map Symbols to Bits
         rx_uneq = reshape(rx_uneq.',numel(rx_uneq),1);
 
-        rxMSG = rx(trainlen+1:end).';
-        rxMSG_uneq = rx_uneq(trainlen+1:end).';
+        rxMSG = rx(k*trainlen+1:end).';
+        rxMSG_uneq = rx_uneq(k*trainlen+1:end).';
        
         
         % Compute and store the BER for this iteration
 
-        [zzz, berVec(i,j)] = biterr(bits(trainlen+1:end), rxMSG);  % We're interested in the BER, which is the 2nd output of BITERR
-        [zzz, berVec_uneq(i,j)] = biterr(bits(trainlen+1:end), rxMSG_uneq);  % We're interested in the BER, which is the 2nd output of BITERR
+        [zzz, berVec(i,j)] = biterr(bits(k*trainlen+1:end), rxMSG);  % We're interested in the BER, which is the 2nd output of BITERR
+        [zzz, berVec_uneq(i,j)] = biterr(bits(k*trainlen+1:end), rxMSG_uneq);  % We're interested in the BER, which is the 2nd output of BITERR
         
     end  % End SNR iteration
 end      % End numIter iteration

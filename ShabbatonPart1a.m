@@ -3,7 +3,7 @@ clear all;close all;clc
 % For the final version of this project, you must use these 3
 % parameter. You will likely want to set numIter to 1 while you debug your
 % link, and then increase it to get an average BER.
-numIter = 100;  % The number of iterations of the simulation
+numIter = 1000;  % The number of iterations of the simulation
 nSym = 1000;    % The number of symbols per packet
 SNR_Vec = 0:2:16;
 lenSNR = length(SNR_Vec);
@@ -97,3 +97,4 @@ end
 hold on
 semilogy(SNR_Vec,berTheory,'r')
 legend('BER','Theoretical BER')
+xlabel('SNR');

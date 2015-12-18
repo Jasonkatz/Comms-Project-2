@@ -3,13 +3,13 @@ clear all;close all;clc
 % For the final version of this project, you must use these 3
 % parameter. You will likely want to set numIter to 1 while you debug your
 % link, and then increase it to get an average BER.
-numIter = 100;  % The number of iterations of the simulation
+numIter = 10;  % The number of iterations of the simulation
 nSym = 1000;    % The number of symbols per packet
 SNR_Vec = 0:2:12;
 lenSNR = length(SNR_Vec);
 h = waitbar(0,'Starting waitbar...');
 
-M = 4;        % The M-ary number, 2 corresponds to binary modulation
+M = 4;          % The M-ary number, 2 corresponds to binary modulation
 k = log2(M);    % number of bits per symbol
 
 %chan = 1;          % No channel
@@ -70,8 +70,8 @@ for i = 1:numIter
         txeq = equalize(eqobj, txNoisy, tx(1:trainlen));
         
 %         h = scatterplot(txNoisy,1,trainlen,'bx'); hold on;
-%         scatterplot(symbolest,1,trainlen,'g.',h);
-%         scatterplot(eq1.SigConst,1,0,'k*',h);
+%         scatterplot(txeq,1,trainlen,'g.',h);
+%         scatterplot(eqobj.SigConst,1,0,'k*',h);
 %         legend('Filtered signal','Equalized signal',...
 %            'Ideal signal constellation');
 %         hold off;
@@ -112,7 +112,7 @@ ber_uneq = mean(berVec_uneq,1);
 
 semilogy(SNR_Vec, ber)
 hold on;
-semilogy(SNR_Vec, ber_uneq)
+%semilogy(SNR_Vec, ber_uneq)
 
 % Compute the theoretical BER for this scenario
 % THIS IS ONLY VALID FOR BPSK!
@@ -125,6 +125,8 @@ else
 end
 hold on
 semilogy(SNR_Vec,berTheory,'r')
-legend('equalized BER','unequalized BER', 'theoretical BER')
+legend('equalized BER', 'theoretical BER')
 
 close(h);
+
+bitrate = (length(bits) - trainlen)/1000
