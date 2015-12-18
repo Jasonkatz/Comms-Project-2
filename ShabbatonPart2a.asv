@@ -6,7 +6,6 @@ clear all;close all;clc
 numIter = 100;  % The number of iterations of the simulation
 nSym = 1000;    % The number of symbols per packet
 SNR_Vec = 0:2:12;
-SNR_Vec = 12;
 lenSNR = length(SNR_Vec);
 h = waitbar(0,'Starting waitbar...');
 
@@ -49,15 +48,14 @@ for i = 1:numIter
    
     msg = bi2de(reshape(code,k,length(code)/k).','left-msb')';
     
-    % Reed Solomon encoding
     m = k;
-    n = 2^m - 1;
-    kRS = 5; % 5:15 RS code
-    reshapedMsg = reshape(msg, nSym/kRS, kRS);
-    msg = gf(reshapedMsg, m);
-    code = rsenc(msg, n, kRS);
+    n = 2^m-1;
+    kRS = 5; % k1:n = 5:15 symbol level encoding
+    reshapedMsg = reshape(msg,nSym/k1,k1);
+    msg = gf(reshapedMsg,m);
+    code = rsenc(msg,n,k1); % RS encoding
     code = double(code.x);
-    msg = reshape(code, 1, n * nSym/kRS);
+    msg = reshape(code,1,n*nSym/k1);
     
     for j = 1:lenSNR % one iteration of the simulation at each SNR Value
 
@@ -94,10 +92,10 @@ for i = 1:numIter
         rx = qamdemod(txeq, M, 0, 'gray'); 
         rx_uneq = qamdemod(txNoisy, M, 0, 'gray');
         
-        % Reed Solomon decoding
-        rxrshp = reshape(rx,nSym/kRS,n); 
+        % RS Decoding:
+        rxrshp = reshape(rx,nSym/k1,n); 
         gfedrx = gf(rxrshp,m);
-        decodedrx = rsdec(gfedrx,n,kRS);
+        decodedrx = rsdec(gfedrx,n,k1);
         decodedrx = double(decodedrx.x);
         rx = reshape(decodedrx,1,nSym);
 
